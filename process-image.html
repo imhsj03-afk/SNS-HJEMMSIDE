@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Remove Checkerboard Background</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #1a1a1a;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 24px;
+    padding: 24px;
+  }
+  h1 { font-size: 1.5rem; margin-bottom: 10px; }
+  p { font-size: 0.95rem; opacity: 0.7; margin-bottom: 20px; }
+
+  .container {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 900px;
+  }
+
+  .preview-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .preview-section label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Checker pattern to show transparency */
+  canvas, img {
+    max-width: 350px;
+    max-height: 500px;
+    background:
+      repeating-conic-gradient(#444 0% 25%, #222 0% 50%)
+      0 0 / 20px 20px;
+    border-radius: 8px;
+    display: block;
+    border: 2px solid #333;
+  }
+
+  #status {
+    font-size: 0.9rem;
+    opacity: 0.6;
+    text-align: center;
+    min-height: 20px;
+  }
+
+  #status.success { color: #4ade80; font-weight: 600; }
+  #status.working { color: #60a5fa; }
+
+  button {
+    padding: 14px 48px;
+    background: #10b981;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: none;
+  }
+  button:hover { background: #059669; }
+  button:active { transform: scale(0.98); }
+
+  .input-section {
+    margin-bottom: 20px;
+  }
+
+  input[type="file"] {
+    padding: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .info-box {
+    background: #2a2a2a;
+    border-left: 4px solid #10b981;
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    opacity: 0.8;
+    max-width: 500px;
+    margin-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+
+<h1>✨ Checkerboard Removal Tool</h1>
+<p>Makes glass & strawberry transparent by removing gray & white squares</p>
+
+<div class="info-box">
+  💡 <strong>How to use:</strong> Upload the image or select Gemini_Generated_Image_hkop9uhkop9uhkop.png, review the preview, then save the transparent PNG.
+</div>
+
+<div class="input-section">
+  <label for="imageInput">Select Image:</label><br>
+  <input type="file" id="imageInput" accept="image/*">
+</div>
+
+<p id="status" class="working">Select an image to begin...</p>
+
+<div class="container">
+  <div class="preview-section">
+    <label>Original (with checkerboard)</label>
+    <img id="original" alt="Original image">
+  </div>
+  <div class="preview-section">
+    <label>Processed (transparent)</label>
+    <canvas id="output"></canvas>
+  </div>
+</div>
+
+<button id="saveBtn">⬇️ Save Transparent PNG</button>
+
+<script>
+const imageInput = document.getElementById('imageInput');
+const original = document.getElementById('original');
+const canvas = document.getElementById('output');
+const ctx = canvas.getContext('2d');
+const status = document.getElementById('status');
+const saveBtn = document.getElementById('saveBtn');
+
+// List of images in the folder to show as quick options
+const quickImageName = 'Gemini_Generated_Image_hkop9uhkop9uhkop.png';
+
+imageInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    processFile(file);
+  }
+});
+
+function processFile(file) {
+  status.textContent = 'Loading image...';
+  status.className = 'working';
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    original.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+original.onload = () => {
+  status.textContent = 'Processing image...';
+  
+  const W = original.naturalWidth;
+  const H = original.naturalHeight;
+  canvas.width = W;
+  canvas.height = H;
+
+  // Draw original image
+  ctx.drawImage(original, 0, 0);
+  const imgData = ctx.getImageData(0, 0, W, H);
+  const px = imgData.data;
+
+  // ═════ PASS A: Remove opaque checkerboard & near-white pixels ═════
+  for (let i = 0; i < px.length; i += 4) {
+    const r = px[i], g = px[i+1], b = px[i+2], a = px[i+3];
+    if (a === 0) continue;
+
+    const lum = 0.299*r + 0.587*g + 0.114*b;
+    const whiteness = Math.min(r, g, b);
+
+    // Fully opaque very-white → likely background
+    if (a === 255 && whiteness > 230 && lum > 235) {
+      px[i+3] = 0;
+      continue;
+    }
+
+    // Partially transparent AND very white → fringe
+    if (a < 255 && whiteness > 210 && lum > 215) {
+      px[i+3] = 0;
+      continue;
+    }
+
+    // Light gray that's uniform (r≈g≈b) → checkerboard
+    if (a === 255 && whiteness > 180 && whiteness < 195) {
+      const rg_diff = Math.abs(r - g);
+      const gb_diff = Math.abs(g - b);
+      if (rg_diff < 5 && gb_diff < 5) {
+        px[i+3] = 0;
+        continue;
+      }
+    }
+  }
+
+  // ═════ PASS B: De-fringe semi-transparent edges ═════
+  for (let i = 0; i < px.length; i += 4) {
+    const a = px[i+3];
+    if (a === 0 || a === 255) continue;
+
+    const alpha = a / 255;
+    const r = px[i], g = px[i+1], b = px[i+2];
+
+    const fr = (r - (1 - alpha) * 255) / alpha;
+    const fg = (g - (1 - alpha) * 255) / alpha;
+    const fb = (b - (1 - alpha) * 255) / alpha;
+
+    if (fr >= 0 && fg >= 0 && fb >= 0 && fr <= 255 && fg <= 255 && fb <= 255) {
+      px[i]   = Math.round(fr);
+      px[i+1] = Math.round(fg);
+      px[i+2] = Math.round(fb);
+    } else {
+      px[i+3] = Math.round(Math.max(0, a * 0.5));
+    }
+  }
+
+  // ═════ PASS C: Clean up remaining fringe ═════
+  const orig = new Uint8ClampedArray(px);
+  for (let y = 1; y < H - 1; y++) {
+    for (let x = 1; x < W - 1; x++) {
+      const i = (y * W + x) * 4;
+      if (orig[i+3] === 0) continue;
+
+      const lum = 0.299*orig[i] + 0.587*orig[i+1] + 0.114*orig[i+2];
+      if (lum < 180) continue;
+
+      let hasTransNeighbour = false;
+      for (let dy = -1; dy <= 1 && !hasTransNeighbour; dy++) {
+        for (let dx = -1; dx <= 1 && !hasTransNeighbour; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const ni = ((y+dy)*W + (x+dx)) * 4;
+          if (orig[ni+3] < 30) hasTransNeighbour = true;
+        }
+      }
+      if (hasTransNeighbour) px[i+3] = 0;
+    }
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+  status.textContent = '✓ Done! Preview looks good — click Save to download';
+  status.className = 'success';
+  saveBtn.style.display = 'inline-block';
+};
+
+original.onerror = () => {
+  status.textContent = '✗ Error loading image';
+  status.className = '';
+};
+
+saveBtn.addEventListener('click', () => {
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'image-transparent.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+});
+</script>
+
+</body>
+</html>

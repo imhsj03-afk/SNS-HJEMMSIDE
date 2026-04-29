@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fix Smoothie Background</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, sans-serif;
+    background: #111;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 24px;
+    padding: 24px;
+  }
+  h1 { font-size: 1.2rem; opacity: 0.7; }
+
+  .previews {
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .preview-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .preview-box span { font-size: 0.8rem; opacity: 0.5; }
+
+  /* Checker bg so we can see transparency */
+  canvas, img {
+    max-width: 320px;
+    max-height: 460px;
+    background:
+      repeating-conic-gradient(#555 0% 25%, #333 0% 50%)
+      0 0 / 20px 20px;
+    border-radius: 12px;
+    display: block;
+  }
+
+  #status { font-size: 0.9rem; opacity: 0.6; }
+
+  button {
+    padding: 14px 40px;
+    background: #27AE60;
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: none;
+  }
+  button:hover { background: #1E8449; }
+</style>
+</head>
+<body>
+
+<h1>Smoothie Background Fix — auto de-fringes & removes checkerboard</h1>
+<p id="status">Loading image…</p>
+
+<div class="previews">
+  <div class="preview-box">
+    <span>ORIGINAL</span>
+    <img id="original" src="Gemini_Generated_Image_hkop9uhkop9uhkop.png" crossorigin="anonymous">
+  </div>
+  <div class="preview-box">
+    <span>FIXED (true transparent)</span>
+    <canvas id="output"></canvas>
+  </div>
+</div>
+
+<button id="saveBtn">⬇ Save Fixed PNG</button>
+
+<script>
+const img    = document.getElementById('original');
+const canvas = document.getElementById('output');
+const ctx    = canvas.getContext('2d');
+const status = document.getElementById('status');
+const saveBtn = document.getElementById('saveBtn');
+
+img.onload = () => {
+  const W = img.naturalWidth;
+  const H = img.naturalHeight;
+  canvas.width  = W;
+  canvas.height = H;
+
+  // ── 1. Draw the image ──────────────────────────────────────────────────
+  ctx.drawImage(img, 0, 0);
+  const imgData = ctx.getImageData(0, 0, W, H);
+  const px = imgData.data;
+
+  // ── 2. Pass A: remove remaining opaque checkerboard / near-white pixels ─
+  //   These are pixels that look white/light-grey and are either fully
+  //   opaque (the tool missed them) or very high alpha.
+  for (let i = 0; i < px.length; i += 4) {
+    const r = px[i], g = px[i+1], b = px[i+2], a = px[i+3];
+    if (a === 0) continue;
+
+    // Luminance of the RGB channels
+    const lum = 0.299*r + 0.587*g + 0.114*b;
+    // "Whiteness" = how close to white (255,255,255) the colour is
+    const whiteness = Math.min(r, g, b); // lowest channel = least colourful
+
+    // Fully opaque very-white pixels → likely leftover background
+    if (a === 255 && whiteness > 230 && lum > 235) {
+      px[i+3] = 0;
+      continue;
+    }
+
+    // Partially transparent AND very white → fringe artefact — remove
+    if (a < 255 && whiteness > 210 && lum > 215) {
+      px[i+3] = 0;
+      continue;
+    }
+  }
+
+  // ── 3. Pass B: de-fringe semi-transparent edge pixels ─────────────────
+  //   Semi-transparent edge pixels often contain white "bleed" from the
+  //   original background.  We un-premultiply against white to recover
+  //   the true foreground colour.
+  for (let i = 0; i < px.length; i += 4) {
+    const a = px[i+3];
+    if (a === 0 || a === 255) continue; // skip fully-transparent / fully-opaque
+
+    const alpha = a / 255;
+    const r = px[i], g = px[i+1], b = px[i+2];
+
+    // Recover foreground colour assuming white (255) background bleeding:
+    // foreground = (pixel - (1 - alpha) * 255) / alpha
+    const fr = (r - (1 - alpha) * 255) / alpha;
+    const fg = (g - (1 - alpha) * 255) / alpha;
+    const fb = (b - (1 - alpha) * 255) / alpha;
+
+    if (fr >= 0 && fg >= 0 && fb >= 0) {
+      // Valid foreground colour — replace with de-fringed version
+      px[i]   = Math.round(Math.min(255, fr));
+      px[i+1] = Math.round(Math.min(255, fg));
+      px[i+2] = Math.round(Math.min(255, fb));
+    } else {
+      // Colour is lighter than the white-bleed formula allows — pure fringe
+      px[i+3] = Math.round(Math.max(0, Math.min(a, (r+g+b)/3 / 255 * a * 0.4)));
+    }
+  }
+
+  // ── 4. Pass C: dilate-erode edge cleanup ──────────────────────────────
+  //   Walk near-transparent pixels; if a fully-transparent neighbour exists
+  //   within 1px AND the pixel is still very bright, kill it.
+  const orig = new Uint8ClampedArray(px); // snapshot before this pass
+  for (let y = 1; y < H - 1; y++) {
+    for (let x = 1; x < W - 1; x++) {
+      const i = (y * W + x) * 4;
+      if (orig[i+3] === 0) continue;
+
+      const lum = 0.299*orig[i] + 0.587*orig[i+1] + 0.114*orig[i+2];
+      if (lum < 180) continue; // not bright enough to be fringe
+
+      // Check 8-connected neighbours for fully-transparent pixels
+      let hasTransNeighbour = false;
+      for (let dy = -1; dy <= 1 && !hasTransNeighbour; dy++) {
+        for (let dx = -1; dx <= 1 && !hasTransNeighbour; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const ni = ((y+dy)*W + (x+dx)) * 4;
+          if (orig[ni+3] < 30) hasTransNeighbour = true;
+        }
+      }
+      if (hasTransNeighbour) px[i+3] = 0;
+    }
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+  status.textContent = '✓ Done — click Save to download the fixed PNG';
+  saveBtn.style.display = 'inline-block';
+};
+
+img.onerror = () => {
+  status.textContent = '✗ Could not load image. Make sure you open this page via http://localhost:5500/fix-smoothie-bg.html';
+};
+
+saveBtn.addEventListener('click', () => {
+  canvas.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'smoothie-transparent.png';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }, 'image/png');
+});
+</script>
+</body>
+</html>

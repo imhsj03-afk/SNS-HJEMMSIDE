@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="theme-color" content="#E8720C">
+  <title>SandwichNSmoothies — Fresh. Fast. Delicious.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=12">
+</head>
+<body>
+
+  <!-- ===========================
+       NAVBAR
+  =========================== -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-left">
+      <ul class="nav-links">
+        <li><a href="#about"    data-en="About"     data-da="Om Os">About</a></li>
+        <li><a href="#menu"     data-en="Menu"      data-da="Menu">Menu</a></li>
+        <li><a href="#smoothies" data-en="Smoothies" data-da="Smoothies">Smoothies</a></li>
+        <li><a href="#contact"  data-en="Contact"   data-da="Kontakt">Contact</a></li>
+      </ul>
+    </div>
+
+    <div class="nav-center">
+      <a href="#" class="nav-logo-link">
+        <img src="Gemini_Generated_Image_cp1b1lcp1b1lcp1b.png" alt="SandwichNSmoothies" class="nav-logo">
+      </a>
+    </div>
+
+    <div class="nav-right">
+      <a href="/login.html" class="login-link" data-en="Owner Login" data-da="Ejer Login">Owner Login</a>
+      <a href="#menu" class="btn-order" data-en="Order Now" data-da="Bestil Nu">Order Now</a>
+      <button class="lang-toggle" id="langToggle" aria-label="Toggle language">
+        <span class="lang-opt" data-lang="en">EN</span>
+        <span class="lang-sep">/</span>
+        <span class="lang-opt" data-lang="da">DA</span>
+      </button>
+    </div>
+
+    <!-- Mobile hamburger -->
+    <button class="hamburger" id="hamburger" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- Mobile nav drawer -->
+  <div class="mobile-nav" id="mobileNav">
+    <ul>
+      <li><a href="#about"     data-en="About"     data-da="Om Os">About</a></li>
+      <li><a href="#menu"      data-en="Menu"      data-da="Menu">Menu</a></li>
+      <li><a href="#smoothies" data-en="Smoothies" data-da="Smoothies">Smoothies</a></li>
+      <li><a href="#contact"   data-en="Contact"   data-da="Kontakt">Contact</a></li>
+    </ul>
+    <a href="#menu" class="btn-order mobile-order" data-en="Order Now" data-da="Bestil Nu">Order Now</a>
+  </div>
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+
+  <!-- ===========================
+       HERO — SANDWICH
+  =========================== -->
+  <section id="hero" class="hero-sandwich">
+
+    <!-- Background wallpaper text -->
+    <div class="wallpaper-bg sandwich-bg" id="sandwichWallpaper" aria-hidden="true"></div>
+
+    <!-- Canvas frame animation -->
+    <div class="hero-inner">
+      <canvas id="sandwichCanvas"></canvas>
+
+      <div class="hero-copy">
+        <h1 class="hero-headline" data-en="Made Fresh.<br>Eaten Fast." data-da="Lavet Frisk.<br>Klar Til Dig.">Made Fresh.<br>Eaten Fast.</h1>
+        <p class="hero-sub" data-en="Real ingredients. Real taste. Ready in minutes." data-da="Ægte ingredienser. Ægte smag. Klar på minutter.">Real ingredients. Real taste. Ready in minutes.</p>
+        <a href="#menu" class="btn-hero" data-en="Explore the Menu" data-da="Se Menuen">Explore the Menu</a>
+      </div>
+    </div>
+
+    <div class="scroll-hint" aria-hidden="true">
+      <span data-en="Scroll to explore" data-da="Rul for at udforske">Scroll to explore</span>
+      <svg width="16" height="24" viewBox="0 0 16 24" fill="none">
+        <rect x="1" y="1" width="14" height="22" rx="7" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="6.5" y="5" width="3" height="6" rx="1.5" fill="currentColor" class="scroll-dot"/>
+      </svg>
+    </div>
+  </section>
+
+
+  <!-- ===========================
+       ABOUT
+  =========================== -->
+  <section id="about" class="section about-section">
+    <div class="container">
+      <div class="about-grid">
+
+        <div class="about-text gsap-reveal-left">
+          <span class="pill" data-en="Our Story" data-da="Vores Historie">Our Story</span>
+          <h2 data-en="Food That Feels Like Home" data-da="Mad Der Føles Som Hjemmet">Food That Feels Like Home</h2>
+          <p data-en="At SandwichNSmoothies, we believe great food should be honest, fresh, and made with love. Every sandwich is crafted to order — layered with real ingredients, bold flavours, and just the right amount of crunch." data-da="Hos SandwichNSmoothies tror vi på, at god mad skal være ærlig, frisk og lavet med kærlighed. Hver sandwich laves på bestilling — lagvist med ægte ingredienser, stærke smage og den rette sprødhed.">At SandwichNSmoothies, we believe great food should be honest, fresh, and made with love. Every sandwich is crafted to order — layered with real ingredients, bold flavours, and just the right amount of crunch.</p>
+          <p data-en="From our pulled chicken to our cold-blended smoothies, everything has a story. Come taste it." data-da="Fra vores pulled chicken til vores koldblendede smoothies har alt en historie. Kom og smag den.">From our pulled chicken to our cold-blended smoothies, everything has a story. Come taste it.</p>
+          <div class="stats-row">
+            <div class="stat">
+              <span class="stat-n">9+</span>
+              <span class="stat-l" data-en="Sandwich Varieties" data-da="Sandwich-varianter">Sandwich Varieties</span>
+            </div>
+            <div class="stat">
+              <span class="stat-n">5</span>
+              <span class="stat-l" data-en="Fresh Smoothies" data-da="Friske Smoothies">Fresh Smoothies</span>
+            </div>
+            <div class="stat">
+              <span class="stat-n">100%</span>
+              <span class="stat-l" data-en="Fresh Daily" data-da="Frisk Dagligt">Fresh Daily</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="about-visual gsap-reveal-right">
+          <div class="about-float-wrap">
+            <canvas id="aboutSandwichCanvas" class="about-float-canvas"></canvas>
+            <div class="about-badge">
+              <span data-en="Since" data-da="Siden">Since</span>
+              <strong>2024</strong>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ===========================
+       MENU
+  =========================== -->
+  <section id="menu" class="section menu-section">
+    <div class="container">
+
+      <div class="menu-intro gsap-fade-up">
+        <span class="pill orange-pill" data-en="What We Serve" data-da="Hvad Vi Serverer">What We Serve</span>
+        <h2 data-en="Our Menu Selection" data-da="Vores Menu Udvalg">Our Menu Selection</h2>
+        <p data-en="At SandwichNSmoothies it's all about freshness, quality and freedom of choice. Build your perfect meal — exactly the way you want it, with our fresh ingredients, homemade dressings and crispy vegetables." data-da="Hos SandwichNSmoothies handler det hele om friskhed, kvalitet og frihed til at vælge. Sammensæt dit perfekte måltid — præcis som du vil have det, med vores friske råvarer, hjemmelavede dressinger og sprøde grøntsager.">At SandwichNSmoothies it's all about freshness, quality and freedom of choice. Build your perfect meal — exactly the way you want it, with our fresh ingredients, homemade dressings and crispy vegetables.</p>
+      </div>
+
+      <div class="menu-cards menu-cards-5">
+
+        <button type="button" class="menu-card gsap-fade-up" data-cat="sandwiches-wraps">
+          <img class="card-img" loading="lazy" alt="" src="ezgif-frame-001.jpg" onerror="this.style.display='none'">
+          <div class="card-grad"></div>
+          <div class="card-body">
+            <h3 class="card-title" data-en="Sandwiches &amp; Wraps" data-da="Sandwiches &amp; Wraps">Sandwiches &amp; Wraps</h3>
+            <span class="card-btn" data-en="View Menu" data-da="Se Menu">View Menu</span>
+          </div>
+        </button>
+
+        <button type="button" class="menu-card gsap-fade-up" data-cat="pasta-pizza">
+          <img class="card-img" loading="lazy" alt="" src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=700&h=950&fit=crop&q=85" onerror="this.style.display='none'">
+          <div class="card-grad"></div>
+          <div class="card-body">
+            <h3 class="card-title" data-en="Pasta &amp; Pizza" data-da="Pasta &amp; Pizza">Pasta &amp; Pizza</h3>
+            <span class="card-btn" data-en="View Menu" data-da="Se Menu">View Menu</span>
+          </div>
+        </button>
+
+        <button type="button" class="menu-card gsap-fade-up" data-cat="sides">
+          <img class="card-img" loading="lazy" alt="" src="https://images.unsplash.com/photo-1582169296194-e4d644c48063?w=700&h=950&fit=crop&q=85" onerror="this.style.display='none'">
+          <div class="card-grad"></div>
+          <div class="card-body">
+            <h3 class="card-title" data-en="Sides &amp; Nachos" data-da="Tilbehør &amp; Nachos">Sides &amp; Nachos</h3>
+            <span class="card-btn" data-en="View Menu" data-da="Se Menu">View Menu</span>
+          </div>
+        </button>
+
+        <button type="button" class="menu-card gsap-fade-up" data-cat="smoothies-shakes">
+          <img class="card-img" loading="lazy" alt="" src="30 High Protein Low Carb Shake Recipes_ Quick Fuel for Post-Workout Recovery - High Protein Recipes.jpg" onerror="this.style.display='none'">
+          <div class="card-grad"></div>
+          <div class="card-body">
+            <h3 class="card-title" data-en="Smoothies &amp; Shakes" data-da="Smoothies &amp; Shakes">Smoothies &amp; Shakes</h3>
+            <span class="card-btn" data-en="View Menu" data-da="Se Menu">View Menu</span>
+          </div>
+        </button>
+
+        <button type="button" class="menu-card gsap-fade-up" data-cat="salads">
+          <img class="card-img" loading="lazy" alt="" src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=700&h=950&fit=crop&q=85" onerror="this.style.display='none'">
+          <div class="card-grad"></div>
+          <div class="card-body">
+            <h3 class="card-title" data-en="Salad Bar" data-da="Salatbar">Salad Bar</h3>
+            <span class="card-btn" data-en="View Menu" data-da="Se Menu">View Menu</span>
+          </div>
+        </button>
+
+      </div>
+
+      <!-- ====== CATEGORY DETAIL TEMPLATES ====== -->
+
+      <template id="tpl-sandwiches-wraps">
+        <div class="cat-detail">
+          <header class="cat-detail-head">
+            <h3 data-en="Sandwiches &amp; Wraps" data-da="Sandwiches &amp; Wraps">Sandwiches &amp; Wraps</h3>
+          </header>
+
+          <h4 class="d-subhead" data-en="Sandwiches" data-da="Sandwiches">Sandwiches</h4>
+          <ul class="cat-detail-items">
+            <li class="d-item"><div class="d-info"><strong data-en="Pulled Chicken Sandwich" data-da="Pulled Chicken Sandwich">Pulled Chicken Sandwich</strong><em data-en="Spiced chicken, cheese, cherry tomatoes, red onion, curry dressing" data-da="Krydret kylling, ost, cherrytomater, rødløg, currydressing">Spiced chicken, cheese, cherry tomatoes, red onion, curry dressing</em></div><span class="d-price">90 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong data-en="It's Kastrup Sandwich" data-da="It's Kastrup Sandwich">It's Kastrup Sandwich</strong><em data-en="Marinated beef strips, melted cheese, jalapeños, chilimayo" data-da="Marinerede oksekødsstrimler, smeltet ost, jalapeños, chilimayo">Marinated beef strips, melted cheese, jalapeños, chilimayo</em></div><span class="d-price">95 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong data-en="Turkey Sandwich" data-da="Kalkun Sandwich">Turkey Sandwich</strong><em data-en="Turkey, cheese, lettuce, tomato, mayo" data-da="Kalkun, ost, salat, tomat, mayo">Turkey, cheese, lettuce, tomato, mayo</em></div><span class="d-price">90 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong data-en="Hot Tuna Sandwich" data-da="Varm Tun Sandwich">Hot Tuna Sandwich</strong><em data-en="Tuna, avocado, jalapeños, pesto" data-da="Tun, avocado, jalapeños, pesto">Tuna, avocado, jalapeños, pesto</em></div><span class="d-price">90 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong data-en="Simple Veggie Sandwich" data-da="Simpel Grøn Sandwich">Simple Veggie Sandwich</strong><em data-en="Mozzarella, avocado, pesto" data-da="Mozzarella, avocado, pesto">Mozzarella, avocado, pesto</em></div><span class="d-price">90 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong data-en="Grasso Sandwich" data-da="Grasso Sandwich">Grasso Sandwich</strong><em data-en="Marinated beef strips, fried onion, garlic mayo" data-da="Marinerede oksekødsstrimler, ristede løg, hvidløgsmayo">Marinated beef strips, fried onion, garlic mayo</em></div><span class="d-price">92 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong data-en="Kastrup Combo Sandwich" data-da="Kastrup Combo Sandwich">Kastrup Combo Sandwich</strong><em data-en="Beef strips + chicken, cheese, jalapeños, two homemade sauces" data-da="Oksekødsstrimler + kylling, ost, jalapeños, to hjemmelavede saucer">Beef strips + chicken, cheese, jalapeños, two homemade sauces</em></div><span class="d-price">105 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong data-en="Shawarma Sandwich" data-da="Shawarma Sandwich">Shawarma Sandwich</strong><em data-en="Shawarma-spiced meat, lettuce, tomato, garlic sauce" data-da="Shawarma-krydret kød, salat, tomat, hvidløgssauce">Shawarma-spiced meat, lettuce, tomato, garlic sauce</em></div><span class="d-price">95 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong data-en="Lox Star Sandwich" data-da="Lox Star Sandwich">Lox Star Sandwich</strong><em data-en="Smoked salmon, avocado, dill dressing" data-da="Røget laks, avocado, dildressing">Smoked salmon, avocado, dill dressing</em></div><span class="d-price">95 kr</span></li>
+          </ul>
+
+          <h4 class="d-subhead" data-en="Wraps" data-da="Wraps">Wraps</h4>
+          <ul class="cat-detail-items">
+            <li class="d-item"><div class="d-info"><strong data-en="Large Burrito" data-da="Stor Burrito">Large Burrito</strong><em data-en="Mozzarella, cheddar, corn, olives, avocado mousse, salsa" data-da="Mozzarella, cheddar, majs, oliven, avocadomousse, salsa">Mozzarella, cheddar, corn, olives, avocado mousse, salsa</em></div><span class="d-price">90 kr</span></li>
+          </ul>
+        </div>
+      </template>
+
+      <template id="tpl-pasta-pizza">
+        <div class="cat-detail">
+          <header class="cat-detail-head">
+            <h3 data-en="Pasta &amp; Pizza" data-da="Pasta &amp; Pizza">Pasta &amp; Pizza</h3>
+          </header>
+
+          <h4 class="d-subhead" data-en="Pasta" data-da="Pasta">Pasta</h4>
+          <ul class="cat-detail-items">
+            <li class="d-item"><div class="d-info"><strong>Fettuccine Pollo</strong><em data-en="Spiced chicken, mushroom, cream, parmesan" data-da="Krydret kylling, svampe, fløde, parmesan">Spiced chicken, mushroom, cream, parmesan</em></div><span class="d-price">85 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong>Fettuccine Kastrup</strong><em data-en="Beef strips, red pepper, garlic oil, cream" data-da="Oksekødsstrimler, rød peber, hvidløgsolie, fløde">Beef strips, red pepper, garlic oil, cream</em></div><span class="d-price">85 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong>Fettuccine Veggie</strong><em data-en="Mushrooms, peppers, cream, parmesan" data-da="Svampe, peberfrugter, fløde, parmesan">Mushrooms, peppers, cream, parmesan</em></div><span class="d-price">85 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong data-en="Garlic Bread" data-da="Hvidløgsbrød">Garlic Bread</strong><em data-en="Toasted bread, garlic butter, parsley" data-da="Ristet brød, hvidløgssmør, persille">Toasted bread, garlic butter, parsley</em></div><span class="d-price">60 kr</span></li>
+          </ul>
+
+          <h4 class="d-subhead" data-en="Pizza" data-da="Pizza">Pizza</h4>
+          <ul class="cat-detail-items">
+            <li class="d-item"><div class="d-info"><strong>KOTO</strong><em data-en="Chicken, mushroom, cheese, tomato sauce, creme fraiche" data-da="Kylling, svampe, ost, tomatsauce, creme fraiche">Chicken, mushroom, cheese, tomato sauce, creme fraiche</em></div><span class="d-price">90 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong>FALO</strong><em data-en="Beef strips, olives, onion, cheese" data-da="Oksekødsstrimler, oliven, løg, ost">Beef strips, olives, onion, cheese</em></div><span class="d-price">90 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong>VEG</strong><em data-en="Mozzarella, peppers, pesto" data-da="Mozzarella, peberfrugter, pesto">Mozzarella, peppers, pesto</em></div><span class="d-price">90 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong data-en="Build Your Own" data-da="Byg Selv Pizza">Build Your Own</strong><em data-en="Choose your toppings" data-da="Vælg dine toppings">Choose your toppings</em></div><span class="d-price">105 kr</span></li>
+          </ul>
+        </div>
+      </template>
+
+      <template id="tpl-sides">
+        <div class="cat-detail">
+          <header class="cat-detail-head">
+            <h3 data-en="Sides &amp; Nachos" data-da="Tilbehør &amp; Nachos">Sides &amp; Nachos</h3>
+          </header>
+          <ul class="cat-detail-items">
+            <li class="d-item"><div class="d-info"><strong data-en="Chicken Skewer" data-da="Kyllingespyd">Chicken Skewer</strong><em data-en="Marinated grilled chicken on a stick" data-da="Marineret grillet kylling på spyd">Marinated grilled chicken on a stick</em></div><span class="d-price">25 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong data-en="Nacho Cheese" data-da="Nacho Cheese">Nacho Cheese</strong><em data-en="Tortilla chips, mozzarella, cheddar, jalapeños, olives + 2 dips" data-da="Tortillachips, mozzarella, cheddar, jalapeños, oliven + 2 dips">Tortilla chips, mozzarella, cheddar, jalapeños, olives + 2 dips</em></div><span class="d-price">70 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong>Nachos Manzo</strong><em data-en="Nacho cheese + beef strips" data-da="Nacho cheese + oksekødsstrimler">Nacho cheese + beef strips</em></div><span class="d-price">80 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong>Nachos Pollo</strong><em data-en="Nacho cheese + spiced chicken" data-da="Nacho cheese + krydret kylling">Nacho cheese + spiced chicken</em></div><span class="d-price">80 kr</span></li>
+          </ul>
+        </div>
+      </template>
+
+      <template id="tpl-smoothies-shakes">
+        <div class="cat-detail">
+          <header class="cat-detail-head">
+            <h3 data-en="Smoothies &amp; Shakes" data-da="Smoothies &amp; Shakes">Smoothies &amp; Shakes</h3>
+          </header>
+
+          <h4 class="d-subhead" data-en="Smoothies — All 45 kr" data-da="Smoothies — Alle 45 kr">Smoothies — All 45 kr</h4>
+          <ul class="cat-detail-items">
+            <li class="d-item"><div class="d-info"><strong data-en="Smoothie A" data-da="Smoothie A">Smoothie A</strong><em data-en="Strawberry, banana, vanilla milk" data-da="Jordbær, banan, vanillemælk">Strawberry, banana, vanilla milk</em></div><span class="d-price">45 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong data-en="Smoothie B" data-da="Smoothie B">Smoothie B</strong><em data-en="Mango, strawberry, vanilla milk" data-da="Mango, jordbær, vanillemælk">Mango, strawberry, vanilla milk</em></div><span class="d-price">45 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong data-en="Smoothie C" data-da="Smoothie C">Smoothie C</strong><em data-en="Mango, blueberry, vanilla milk" data-da="Mango, blåbær, vanillemælk">Mango, blueberry, vanilla milk</em></div><span class="d-price">45 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong data-en="Smoothie D" data-da="Smoothie D">Smoothie D</strong><em data-en="Strawberry, blueberry, banana, vanilla milk" data-da="Jordbær, blåbær, banan, vanillemælk">Strawberry, blueberry, banana, vanilla milk</em></div><span class="d-price">45 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong data-en="Smoothie E" data-da="Smoothie E">Smoothie E</strong><em data-en="Strawberry, blueberry, mango, banana, vanilla milk" data-da="Jordbær, blåbær, mango, banan, vanillemælk">Strawberry, blueberry, mango, banana, vanilla milk</em></div><span class="d-price">45 kr</span></li>
+          </ul>
+
+          <h4 class="d-subhead" data-en="Milkshakes" data-da="Milkshakes">Milkshakes</h4>
+          <ul class="cat-detail-items">
+            <li class="d-item"><div class="d-info"><strong>Oreo Shake 0.3L</strong><em data-en="Vanilla ice cream blended with Oreo cookies" data-da="Vaniljeis blendet med Oreo-kiks">Vanilla ice cream blended with Oreo cookies</em></div><span class="d-price">45 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong>Daim Shake 0.3L</strong><em data-en="Vanilla ice cream blended with Daim chocolate" data-da="Vaniljeis blendet med Daim-chokolade">Vanilla ice cream blended with Daim chocolate</em></div><span class="d-price">45 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong>Oreo Shake 0.5L</strong><em data-en="Vanilla ice cream blended with Oreo cookies — large size" data-da="Vaniljeis blendet med Oreo-kiks — stor størrelse">Vanilla ice cream blended with Oreo cookies — large size</em></div><span class="d-price">55 kr</span></li>
+            <li class="d-item"><div class="d-info"><strong>Daim Shake 0.5L</strong><em data-en="Vanilla ice cream blended with Daim chocolate — large size" data-da="Vaniljeis blendet med Daim-chokolade — stor størrelse">Vanilla ice cream blended with Daim chocolate — large size</em></div><span class="d-price">55 kr</span></li>
+          </ul>
+        </div>
+      </template>
+
+      <template id="tpl-salads">
+        <div class="cat-detail">
+          <header class="cat-detail-head">
+            <h3 data-en="Salad Bar" data-da="Salatbar">Salad Bar</h3>
+          </header>
+          <ul class="cat-detail-items">
+            <li class="d-item"><div class="d-info"><strong data-en="Chicken Salad" data-da="Kyllingesalat">Chicken Salad</strong><em data-en="Pasta, green pesto, pulled chicken, feta" data-da="Pasta, grøn pesto, pulled chicken, feta">Pasta, green pesto, pulled chicken, feta</em></div><span class="d-price">50 kr</span></li>
+          </ul>
+        </div>
+      </template>
+
+    </div>
+  </section>
+
+  <!-- ===== MENU MODAL ===== -->
+  <div class="menu-modal" id="menuModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true">
+      <button type="button" class="modal-close" data-close aria-label="Close menu">&times;</button>
+      <div class="modal-content" id="modalContent"></div>
+    </div>
+  </div>
+
+
+  <!-- ===========================
+       SMOOTHIE HERO
+  =========================== -->
+  <section id="smoothies" class="hero-smoothie">
+
+    <div class="wallpaper-bg smoothie-bg" id="smoothieWallpaper" aria-hidden="true"></div>
+
+    <div class="smoothie-portrait">
+
+      <img src="Gemini_Generated_Image_hkop9uhkop9uhkop-removebg-preview.png"
+           alt="Strawberry smoothie"
+           class="smoothie-glass-img">
+
+      <div class="smoothie-text-block">
+        <h2 class="smoothie-big-headline"
+            data-en="Blended to<br>Perfection."
+            data-da="Blendet til<br>Perfektion.">Blendet til<br>Perfektion.</h2>
+        <p class="smoothie-sub"
+           data-en="Five fresh blends made daily. Pure fruit. Pure energy."
+           data-da="Fem friske blends lavet dagligt. Ren frugt. Ren energi.">Fem friske blends lavet dagligt. Ren frugt. Ren energi.</p>
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- ===========================
+       CONTACT
+  =========================== -->
+  <section id="contact" class="section contact-section">
+    <div class="container">
+
+      <div class="section-header gsap-fade-up">
+        <span class="pill" data-en="Find Us" data-da="Find Os">Find Us</span>
+        <h2 data-en="Visit Us Today" data-da="Besøg Os I Dag">Visit Us Today</h2>
+      </div>
+
+      <div class="contact-grid">
+
+        <div class="contact-info gsap-reveal-left">
+          <div class="contact-item">
+            <div class="contact-icon">📍</div>
+            <div>
+              <strong data-en="Address" data-da="Adresse">Address</strong>
+              <p>Kastruplundgade 4, 2770 Kastrup</p>
+            </div>
+          </div>
+          <div class="contact-item">
+            <div class="contact-icon">📞</div>
+            <div>
+              <strong data-en="Phone" data-da="Telefon">Phone</strong>
+              <p><a href="tel:49404140">49 40 41 40</a></p>
+            </div>
+          </div>
+          <div class="contact-item">
+            <div class="contact-icon">🕐</div>
+            <div>
+              <strong data-en="Hours" data-da="Åbningstider">Hours</strong>
+              <p data-en="Opens 10:00 · Closed Mondays" data-da="Åbner 10:00 · Lukket Mandage">Opens 10:00 · Closed Mondays</p>
+            </div>
+          </div>
+          <a href="https://maps.google.com/?q=Kastruplundgade+4,+2770+Kastrup,+Denmark" target="_blank" rel="noopener" class="btn-map" data-en="Open in Google Maps" data-da="Åbn i Google Maps">Open in Google Maps ↗</a>
+        </div>
+
+        <div class="contact-map-wrap gsap-reveal-right">
+          <iframe
+            title="SandwichNSmoothies Location"
+            src="https://maps.google.com/maps?q=Kastruplundgade+4,+2770+Kastrup,+Denmark&output=embed"
+            width="100%"
+            height="420"
+            style="border:0; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.12)"
+            allowfullscreen=""
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade">
+          </iframe>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ===========================
+       FOOTER
+  =========================== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <img src="Gemini_Generated_Image_e8exene8exene8ex.png" alt="SandwichNSmoothies" class="footer-logo">
+        <nav class="footer-nav">
+          <a href="#about"     data-en="About"     data-da="Om Os">About</a>
+          <a href="#menu"      data-en="Menu"      data-da="Menu">Menu</a>
+          <a href="#smoothies" data-en="Smoothies" data-da="Smoothies">Smoothies</a>
+          <a href="#contact"   data-en="Contact"   data-da="Kontakt">Contact</a>
+        </nav>
+        <p class="footer-copy" data-en="© 2024 SandwichNSmoothies · Bytorvet 8, Albertslund · 43 40 40 80" data-da="© 2024 SandwichNSmoothies · Bytorvet 8, Albertslund · 43 40 40 80">© 2024 SandwichNSmoothies · Bytorvet 8, Albertslund · 43 40 40 80</p>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- GSAP via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="script.js?v=10"></script>
+</body>
+</html>
