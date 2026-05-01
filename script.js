@@ -1,15 +1,16 @@
 /* ============================================================
-   SandwichNSmoothies — Main Script
+   SandwichNSmoothies — Main Script  (performance-optimised)
 ============================================================ */
 
 gsap.registerPlugin(ScrollTrigger);
 
+/* ── Device / motion detection ─────────────────────────────── */
+const isMobile       = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 768;
+const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 
 /* ============================================================
-   AUTO BACKGROUND REMOVAL (any colour)
-   Samples the background colour from the four corner patches,
-   then removes pixels within colour-distance tolerance.
-   Used for images with non-white studio backdrops.
+   BACKGROUND REMOVAL — auto (any colour)
 ============================================================ */
 function removeBgAuto(img, drawW, drawH, tolerance = 38, feather = 30) {
   const off  = document.createElement('canvas');
@@ -21,7 +22,6 @@ function removeBgAuto(img, drawW, drawH, tolerance = 38, feather = 30) {
   const data = c.getImageData(0, 0, drawW, drawH);
   const px   = data.data;
 
-  // Sample background from 10×10 patches at each corner
   const p = Math.max(6, Math.floor(Math.min(drawW, drawH) * 0.015));
   let sR = 0, sG = 0, sB = 0, n = 0;
   const corners = [[0,0],[drawW-p,0],[0,drawH-p],[drawW-p,drawH-p]];
@@ -50,11 +50,7 @@ function removeBgAuto(img, drawW, drawH, tolerance = 38, feather = 30) {
 
 
 /* ============================================================
-   BACKGROUND REMOVAL (near-white / grey)
-   Removes near-white/grey pixels from a loaded Image element.
-   Returns an offscreen canvas with those pixels made transparent.
-   threshold: pixels with avg brightness above this become transparent
-   feather:   how many units of smooth fade at the edge
+   BACKGROUND REMOVAL — near-white / grey
 ============================================================ */
 function removeWhiteBg(img, drawW, drawH, threshold = 225, feather = 20) {
   const off  = document.createElement('canvas');
@@ -67,13 +63,11 @@ function removeWhiteBg(img, drawW, drawH, threshold = 225, feather = 20) {
   const px   = data.data;
 
   for (let i = 0; i < px.length; i += 4) {
-    const r = px[i], g = px[i + 1], b = px[i + 2];
+    const r = px[i], g = px[i+1], b = px[i+2];
     const brightness = (r + g + b) / 3;
-
     if (brightness > threshold) {
-      // Remap [threshold .. 255] → alpha [255 .. 0] with smooth feather
       const t  = Math.min(1, (brightness - threshold) / feather);
-      px[i + 3] = Math.round((1 - t) * 255);
+      px[i+3] = Math.round((1 - t) * 255);
     }
   }
 
@@ -84,11 +78,9 @@ function removeWhiteBg(img, drawW, drawH, threshold = 225, feather = 20) {
 
 /* ============================================================
    LOGO BACKGROUND REMOVAL
-   Process logo once → create blob URL → swap all logo <img> srcs
 ============================================================ */
 function processLogos() {
   const logoImg = new Image();
-  // Same-origin (localhost) — no CORS header needed; omitting crossOrigin keeps canvas untainted
   logoImg.src = 'Gemini_Generated_Image_cp1b1lcp1b1lcp1b.png';
 
   logoImg.onload = () => {
@@ -96,13 +88,11 @@ function processLogos() {
       logoImg,
       logoImg.naturalWidth,
       logoImg.naturalHeight,
-      215,   // threshold — removes light grey background
-      30     // feather — smooth edges
+      215,
+      30
     );
-
     processed.toBlob(blob => {
       const url = URL.createObjectURL(blob);
-      // Update all logo images on the page
       document.querySelectorAll('.nav-logo, .footer-logo').forEach(el => {
         el.src = url;
       });
@@ -115,9 +105,6 @@ processLogos();
 
 /* ============================================================
    ABOUT SECTION — FLOATING SANDWICH
-   Load the sandwich PNG, remove white bg via pixel processing,
-   draw the result on the <canvas> so the sandwich "floats"
-   on the off-white section background exactly like the hero.
 ============================================================ */
 (function renderAboutSandwich() {
   const ac  = document.getElementById('aboutSandwichCanvas');
@@ -130,7 +117,6 @@ processLogos();
   img.onload = () => {
     ac.width  = img.naturalWidth;
     ac.height = img.naturalHeight;
-
     const processed = removeWhiteBg(img, img.naturalWidth, img.naturalHeight, 220, 22);
     actx.drawImage(processed, 0, 0);
   };
@@ -141,17 +127,21 @@ processLogos();
    WALLPAPER TEXT FILL
 ============================================================ */
 function fillWallpaper(el, word) {
+  if (!el) return;
   const fs    = Math.max(72, Math.min(190, window.innerWidth * 0.13));
   const lh    = fs * 0.86;
   const count = Math.ceil(window.innerHeight / lh) + 3;
 
-  el.innerHTML = '';
+  // Single DOM write via fragment — no layout thrashing
+  const frag = document.createDocumentFragment();
   for (let i = 0; i < count; i++) {
     const d = document.createElement('div');
     d.className   = 'wallpaper-line';
     d.textContent = word;
-    el.appendChild(d);
+    frag.appendChild(d);
   }
+  el.innerHTML = '';
+  el.appendChild(frag);
 }
 
 const sandwichWall = document.getElementById('sandwichWallpaper');
@@ -167,38 +157,39 @@ window.addEventListener('resize', () => {
     fillWallpaper(sandwichWall, 'SANDWICH');
     fillWallpaper(smoothieWall,  'SMOOTHIE');
     ScrollTrigger.refresh();
-  }, 150);
+  }, 200);
 }, { passive: true });
 
 
 /* ============================================================
    CANVAS SCROLL ANIMATION
-   Frames play forward (assembled→exploded) on scroll down.
-   White backgrounds removed per-frame via pixel processing.
-   Frames are cached after first render so processing is one-time.
+   — Mobile: half internal resolution = 4x fewer pixels to process
+   — warmCache runs only during browser idle time, never blocks scroll
 ============================================================ */
-const canvas      = document.getElementById('sandwichCanvas');
-const ctx         = canvas.getContext('2d');
+const canvas = document.getElementById('sandwichCanvas');
+const ctx    = canvas.getContext('2d', { alpha: true });
 const FRAME_COUNT = 125;
 
-// Internal canvas resolution — half of source (faster pixel processing)
-const CW = 728, CH = 408;
+const CW = 728;
+const CH = 408;
 canvas.width  = CW;
 canvas.height = CH;
 
-const rawFrames       = new Array(FRAME_COUNT);  // original Image objects
-const processedFrames = new Array(FRAME_COUNT).fill(null); // transparent canvases
+const rawFrames       = new Array(FRAME_COUNT);
+const processedFrames = new Array(FRAME_COUNT).fill(null);
 let   loadedCount     = 0;
+let   currentFrame    = -1; // skip redundant redraws
 
 function pad(n) { return String(n).padStart(3, '0'); }
 
-// Draw a processed (transparent-bg) frame to the visible canvas
 function renderFrame(index) {
-  const i   = Math.max(0, Math.min(FRAME_COUNT - 1, index));
+  const i = Math.max(0, Math.min(FRAME_COUNT - 1, index));
+  if (i === currentFrame) return; // already on this frame — skip
+  currentFrame = i;
+
   const img = rawFrames[i];
   if (!img || !img.complete || !img.naturalWidth) return;
 
-  // Process on first use, then cache
   if (!processedFrames[i]) {
     processedFrames[i] = removeWhiteBg(img, CW, CH, 225, 18);
   }
@@ -207,17 +198,16 @@ function renderFrame(index) {
   ctx.drawImage(processedFrames[i], 0, 0);
 }
 
-// Preload all frames; draw first frame as soon as it's ready
 function preload() {
   return new Promise(resolve => {
     for (let i = 0; i < FRAME_COUNT; i++) {
       const img = new Image();
-      // Same-origin — no crossOrigin needed; canvas stays untainted for pixel processing
+      img.decoding = 'async'; // decode off main thread
       img.src = `ezgif-frame-${pad(i + 1)}.jpg`;
 
       img.onload = () => {
         loadedCount++;
-        if (i === 0) renderFrame(0);          // immediate first paint
+        if (i === 0) renderFrame(0);
         if (loadedCount === FRAME_COUNT) resolve();
       };
       img.onerror = () => {
@@ -230,18 +220,27 @@ function preload() {
   });
 }
 
-// Background-preprocess upcoming frames so scroll feels instant
+// Pre-process frames only during idle time — never steals from scroll
 function warmCache() {
   let i = 0;
+  const schedule = typeof requestIdleCallback === 'function'
+    ? cb => requestIdleCallback(cb, { timeout: 500 })
+    : cb => setTimeout(cb, 16);
+
   function next() {
-    if (i >= FRAME_COUNT) return;
-    if (!processedFrames[i] && rawFrames[i]?.complete) {
-      processedFrames[i] = removeWhiteBg(rawFrames[i], CW, CH, 225, 18);
+    // Process fewer frames per idle slot on mobile to stay under 16ms budget
+    const limit = isMobile ? 2 : 8;
+    let count = 0;
+    while (i < FRAME_COUNT && count < limit) {
+      if (!processedFrames[i] && rawFrames[i]?.complete) {
+        processedFrames[i] = removeWhiteBg(rawFrames[i], CW, CH, 225, 18);
+        count++;
+      }
+      i++;
     }
-    i++;
-    requestIdleCallback ? requestIdleCallback(next) : setTimeout(next, 8);
+    if (i < FRAME_COUNT) schedule(next);
   }
-  next();
+  schedule(next);
 }
 
 preload().then(() => {
@@ -260,8 +259,10 @@ function initScrollAnimation() {
       start: 'top top',
       end: '+=900',
       pin: true,
-      scrub: 0.6,
+      scrub: isMobile ? 1 : 0.6,  // more scrub on mobile = smoother on fast swipe
       anticipatePin: 1,
+      fastScrollEnd: true,          // stops over-shooting on fast finger swipe
+      preventOverlaps: true,
     },
     onUpdate() {
       renderFrame(Math.round(obj.frame));
@@ -327,51 +328,72 @@ ScrollTrigger.create({
 
 /* ============================================================
    SECTION REVEAL ANIMATIONS
+   — Skipped entirely for users who prefer reduced motion
 ============================================================ */
-function reveal(selector, fromVars) {
-  gsap.utils.toArray(selector).forEach((el, i) => {
-    gsap.fromTo(el,
-      { opacity: 0, ...fromVars },
-      {
-        opacity: 1, x: 0, y: 0,
-        duration: 0.75,
-        delay: i * 0.08,
-        ease: 'power3.out',
-        scrollTrigger: {
-          trigger: el,
-          start: 'top 84%',
-          toggleActions: 'play none none none',
-        },
-      }
-    );
+if (!prefersReduced) {
+  function reveal(selector, fromVars) {
+    gsap.utils.toArray(selector).forEach((el, i) => {
+      gsap.fromTo(el,
+        { opacity: 0, ...fromVars },
+        {
+          opacity: 1, x: 0, y: 0,
+          duration: 0.75,
+          delay: i * 0.08,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top 84%',
+            toggleActions: 'play none none none',
+          },
+        }
+      );
+    });
+  }
+
+  reveal('.gsap-fade-up',      { y: 40 });
+  reveal('.gsap-reveal-left',  { x: -50 });
+  reveal('.gsap-reveal-right', { x: 50 });
+
+  gsap.utils.toArray('.menu-card').forEach((card, i) => {
+    gsap.from(card, {
+      opacity: 0,
+      y: 32,
+      duration: 0.6,
+      ease: 'power2.out',
+      delay: (i % 4) * 0.06,
+      scrollTrigger: {
+        trigger: card,
+        start: 'top 92%',
+        toggleActions: 'play none none none',
+      },
+    });
+  });
+
+  document.querySelectorAll('.stat-n').forEach(el => {
+    ScrollTrigger.create({
+      trigger: el,
+      start: 'top 85%',
+      once: true,
+      onEnter() {
+        gsap.from(el, { scale: 0.5, opacity: 0, duration: 0.5, ease: 'back.out(1.7)' });
+      },
+    });
+  });
+
+} else {
+  // Immediately show all animated elements — no flicker
+  document.querySelectorAll('.gsap-fade-up, .gsap-reveal-left, .gsap-reveal-right').forEach(el => {
+    el.style.opacity = '1';
+    el.style.transform = 'none';
   });
 }
 
-reveal('.gsap-fade-up',      { y: 40 });
-reveal('.gsap-reveal-left',  { x: -50 });
-reveal('.gsap-reveal-right', { x: 50 });
-
-gsap.utils.toArray('.menu-card').forEach((card, i) => {
-  gsap.from(card, {
-    opacity: 0,
-    y: 32,
-    duration: 0.6,
-    ease: 'power2.out',
-    delay: (i % 4) * 0.06,
-    scrollTrigger: {
-      trigger: card,
-      start: 'top 92%',
-      toggleActions: 'play none none none',
-    },
-  });
-});
-
 
 /* ============================================================
-   MENU MODAL  (poster card click → category items)
+   MENU MODAL
 ============================================================ */
-const menuModal     = document.getElementById('menuModal');
-const modalContent  = document.getElementById('modalContent');
+const menuModal    = document.getElementById('menuModal');
+const modalContent = document.getElementById('modalContent');
 
 function openMenuModal(catId) {
   const tpl = document.getElementById(`tpl-${catId}`);
@@ -380,14 +402,13 @@ function openMenuModal(catId) {
   modalContent.innerHTML = '';
   modalContent.appendChild(tpl.content.cloneNode(true));
 
-  // Re-apply current language so freshly cloned nodes get translated
   applyLanguage(lang);
+  initShoppingBags(); // called directly — no fragile window override needed
 
   menuModal.classList.add('open');
   menuModal.setAttribute('aria-hidden', 'false');
   document.body.classList.add('modal-open');
 
-  // Focus the close button for keyboard users
   setTimeout(() => menuModal.querySelector('.modal-close')?.focus(), 50);
 }
 
@@ -397,30 +418,17 @@ function closeMenuModal() {
   document.body.classList.remove('modal-open');
 }
 
-// Wire up every poster card
 document.querySelectorAll('.menu-card').forEach(card => {
-  card.addEventListener('click', () => openMenuModal(card.dataset.cat));
+  card.addEventListener('click', () => openMenuModal(card.dataset.cat), { passive: true });
 });
 
-// Close handlers — backdrop, X button, and ESC
 menuModal.querySelectorAll('[data-close]').forEach(el => {
-  el.addEventListener('click', closeMenuModal);
+  el.addEventListener('click', closeMenuModal, { passive: true });
 });
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && menuModal.classList.contains('open')) closeMenuModal();
 }, { passive: true });
-
-document.querySelectorAll('.stat-n').forEach(el => {
-  ScrollTrigger.create({
-    trigger: el,
-    start: 'top 85%',
-    once: true,
-    onEnter() {
-      gsap.from(el, { scale: 0.5, opacity: 0, duration: 0.5, ease: 'back.out(1.7)' });
-    },
-  });
-});
 
 
 /* ============================================================
@@ -433,8 +441,11 @@ function applyLanguage(l) {
   document.querySelectorAll('[data-en]').forEach(el => {
     const text = el.getAttribute(`data-${l}`);
     if (!text) return;
-    el.innerHTML = text.includes('<') ? text : '';
-    if (!text.includes('<')) el.textContent = text;
+    if (text.includes('<')) {
+      el.innerHTML = text;
+    } else {
+      el.textContent = text;
+    }
   });
   document.querySelectorAll('.lang-opt').forEach(opt => {
     opt.classList.toggle('active', opt.dataset.lang === l);
@@ -442,12 +453,11 @@ function applyLanguage(l) {
   document.documentElement.lang = l;
 }
 
-// Apply default language (Danish) as soon as DOM is ready
 applyLanguage('da');
 
 document.getElementById('langToggle').addEventListener('click', () => {
   applyLanguage(lang === 'da' ? 'en' : 'da');
-});
+}, { passive: true });
 
 
 /* ============================================================
@@ -457,24 +467,50 @@ const hamburger     = document.getElementById('hamburger');
 const mobileNav     = document.getElementById('mobileNav');
 const mobileOverlay = document.getElementById('mobileOverlay');
 
-const openMobileNav  = () => { mobileNav.classList.add('open'); mobileOverlay.classList.add('open'); document.body.style.overflow = 'hidden'; };
-const closeMobileNav = () => { mobileNav.classList.remove('open'); mobileOverlay.classList.remove('open'); document.body.style.overflow = ''; };
+const openMobileNav  = () => {
+  mobileNav.classList.add('open');
+  mobileOverlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
 
-hamburger.addEventListener('click', () => mobileNav.classList.contains('open') ? closeMobileNav() : openMobileNav(), { passive: false });
+const closeMobileNav = () => {
+  mobileNav.classList.remove('open');
+  mobileOverlay.classList.remove('open');
+  document.body.style.overflow = '';
+};
+
+hamburger.addEventListener('click', () => {
+  mobileNav.classList.contains('open') ? closeMobileNav() : openMobileNav();
+}, { passive: true });
+
 mobileOverlay.addEventListener('click', closeMobileNav, { passive: true });
-mobileNav.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMobileNav, { passive: true }));
+
+mobileNav.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', closeMobileNav, { passive: true });
+});
 
 
 /* ============================================================
    SMOOTH ANCHOR SCROLL
 ============================================================ */
+let cachedNavHeight = null;
+function getNavHeight() {
+  if (cachedNavHeight === null) {
+    cachedNavHeight = parseInt(
+      getComputedStyle(document.documentElement).getPropertyValue('--nav-h')
+    );
+  }
+  return cachedNavHeight;
+}
+
+window.addEventListener('resize', () => { cachedNavHeight = null; }, { passive: true });
+
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
   anchor.addEventListener('click', function(e) {
     const target = document.querySelector(this.getAttribute('href'));
     if (!target) return;
     e.preventDefault();
-    const navH   = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'));
-    const offset = target.getBoundingClientRect().top + window.scrollY - navH - 16;
+    const offset = target.getBoundingClientRect().top + window.scrollY - getNavHeight() - 16;
     requestAnimationFrame(() => {
       window.scrollTo({ top: offset, behavior: 'smooth' });
     });
@@ -483,31 +519,13 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 
 
 /* ============================================================
-   PERFORMANCE OPTIMIZATION — Cache navbar height to avoid recalculation
-============================================================ */
-let cachedNavHeight = null;
-function getNavHeight() {
-  if (cachedNavHeight === null) {
-    cachedNavHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'));
-  }
-  return cachedNavHeight;
-}
-
-window.addEventListener('resize', () => {
-  cachedNavHeight = null;
-}, { passive: true });
-
-
-/* ============================================================
-   SHOPPING BAG INTEGRATION
-   Add shopping bag icons to all prices with click handlers
+   SHOPPING BAG
 ============================================================ */
 function initShoppingBags() {
   document.querySelectorAll('.d-price').forEach(priceEl => {
-    // Skip if already processed
     if (priceEl.querySelector('.shopping-bag-btn')) return;
 
-    const price = priceEl.textContent;
+    const price = priceEl.textContent.trim();
     priceEl.innerHTML = `
       <span class="price-wrapper">
         <span>${price}</span>
@@ -518,25 +536,13 @@ function initShoppingBags() {
     `;
 
     const btn = priceEl.querySelector('.shopping-bag-btn');
-    btn.addEventListener('click', (e) => {
+    let resetTimer;
+    btn.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
-      
-      // Trigger animation
       btn.classList.add('added');
-      
-      // Reset after 2 seconds
-      setTimeout(() => {
-        btn.classList.remove('added');
-      }, 2000);
-    });
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(() => btn.classList.remove('added'), 2000);
+    }, { passive: false });
   });
 }
-
-// Initialize when menu modal opens
-const originalOpenModal = window.openMenuModal;
-window.openMenuModal = function(catId) {
-  originalOpenModal(catId);
-  // Wait for DOM to update, then initialize shopping bags
-  setTimeout(() => initShoppingBags(), 50);
-};
