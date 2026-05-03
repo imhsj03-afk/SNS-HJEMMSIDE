@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-  <meta name="theme-color" content="#E8720C">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="color-scheme" content="light">
   <title>SandwichNSmoothies — Fresh. Fast. Delicious.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -305,6 +306,43 @@
       <div class="modal-content" id="modalContent"></div>
     </div>
   </div>
+
+  <!-- ===== CHECKOUT MODAL ===== -->
+  <div class="checkout-modal" id="checkoutModal" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true">
+      <div class="checkout-header">
+        <button type="button" class="btn-back" aria-label="Fortsæt med at bestille">← Fortsæt med at bestille</button>
+        <h3>Betaling</h3>
+      </div>
+      <div class="checkout-items"></div>
+      <div class="checkout-total">
+        <div class="checkout-total-label">I alt</div>
+        <div class="checkout-total-amount">0 kr</div>
+      </div>
+      <div class="payment-methods">
+        <button type="button" class="payment-btn mobilepay">📱 MobilePay</button>
+        <button type="button" class="payment-btn applepay">🍎 Apple Pay</button>
+        <button type="button" class="payment-btn kort">💳 Kort</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CONFIRMATION MESSAGE ===== -->
+  <div class="confirmation-message" id="confirmationMessage" aria-hidden="true">
+    <div class="confirmation-content">
+      <span class="confirmation-emoji">🎉</span>
+      <h2 class="confirmation-text">Tak for din ordre!</h2>
+    </div>
+  </div>
+
+  <!-- ===== FLOATING CART BUTTON ===== -->
+  <button type="button" class="floating-cart-btn" id="floatingCartBtn" aria-label="Gå til betaling">
+    <span class="cart-icon">🛍️</span>
+    <span class="cart-count">0 varer</span>
+    <span class="cart-price">kr. 0</span>
+    <span class="cart-arrow">→</span>
+  </button>
 
 
   <!-- ===========================

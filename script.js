@@ -4,6 +4,12 @@
 
 gsap.registerPlugin(ScrollTrigger);
 
+/* ── CRITICAL MOBILE FIX: stop address bar resize from breaking the pin ── */
+ScrollTrigger.config({
+  ignoreMobileResize: true,
+  autoRefreshEvents: 'visibilitychange,DOMContentLoaded,load'
+});
+
 /* ── Device / motion detection ─────────────────────────────── */
 const isMobile       = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 768;
 const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -132,7 +138,6 @@ function fillWallpaper(el, word) {
   const lh    = fs * 0.86;
   const count = Math.ceil(window.innerHeight / lh) + 3;
 
-  // Single DOM write via fragment — no layout thrashing
   const frag = document.createDocumentFragment();
   for (let i = 0; i < count; i++) {
     const d = document.createElement('div');
@@ -163,7 +168,6 @@ window.addEventListener('resize', () => {
 
 /* ============================================================
    CANVAS SCROLL ANIMATION
-   — Mobile: half internal resolution = 4x fewer pixels to process
    — warmCache runs only during browser idle time, never blocks scroll
 ============================================================ */
 const canvas = document.getElementById('sandwichCanvas');
@@ -178,14 +182,12 @@ canvas.height = CH;
 const rawFrames       = new Array(FRAME_COUNT);
 const processedFrames = new Array(FRAME_COUNT).fill(null);
 let   loadedCount     = 0;
-let   currentFrame    = -1; // skip redundant redraws
+let   currentFrame    = -1;
 
 function pad(n) { return String(n).padStart(3, '0'); }
 
 function renderFrame(index) {
   const i = Math.max(0, Math.min(FRAME_COUNT - 1, index));
-  if (i === currentFrame) return; // already on this frame — skip
-  currentFrame = i;
 
   const img = rawFrames[i];
   if (!img || !img.complete || !img.naturalWidth) return;
@@ -194,6 +196,10 @@ function renderFrame(index) {
     processedFrames[i] = removeWhiteBg(img, CW, CH, 225, 18);
   }
 
+  if (!processedFrames[i]) return;
+
+  if (i === currentFrame) return;
+  currentFrame = i;
   ctx.clearRect(0, 0, CW, CH);
   ctx.drawImage(processedFrames[i], 0, 0);
 }
@@ -202,7 +208,7 @@ function preload() {
   return new Promise(resolve => {
     for (let i = 0; i < FRAME_COUNT; i++) {
       const img = new Image();
-      img.decoding = 'async'; // decode off main thread
+      img.decoding = 'async';
       img.src = `ezgif-frame-${pad(i + 1)}.jpg`;
 
       img.onload = () => {
@@ -220,7 +226,18 @@ function preload() {
   });
 }
 
-// Pre-process frames only during idle time — never steals from scroll
+function prewarmCriticalFrames() {
+  const criticalIndexes = [
+    ...Array.from({ length: 10 }, (_, i) => i),
+    ...Array.from({ length: 10 }, (_, i) => FRAME_COUNT - 1 - i)
+  ];
+  for (const i of criticalIndexes) {
+    if (!processedFrames[i] && rawFrames[i]?.complete && rawFrames[i]?.naturalWidth) {
+      processedFrames[i] = removeWhiteBg(rawFrames[i], CW, CH, 225, 18);
+    }
+  }
+}
+
 function warmCache() {
   let i = 0;
   const schedule = typeof requestIdleCallback === 'function'
@@ -228,8 +245,7 @@ function warmCache() {
     : cb => setTimeout(cb, 16);
 
   function next() {
-    // Process fewer frames per idle slot on mobile to stay under 16ms budget
-    const limit = isMobile ? 2 : 8;
+    const limit = isMobile ? 1 : 8;
     let count = 0;
     while (i < FRAME_COUNT && count < limit) {
       if (!processedFrames[i] && rawFrames[i]?.complete) {
@@ -244,12 +260,14 @@ function warmCache() {
 }
 
 preload().then(() => {
+  prewarmCriticalFrames();
   initScrollAnimation();
   warmCache();
 });
 
 function initScrollAnimation() {
   const obj = { frame: 0 };
+  const scrollDist = isMobile ? window.innerHeight * 1.2 : 900;
 
   gsap.to(obj, {
     frame: FRAME_COUNT - 1,
@@ -257,12 +275,20 @@ function initScrollAnimation() {
     scrollTrigger: {
       trigger: '#hero',
       start: 'top top',
-      end: '+=900',
+      end: `+=${scrollDist}`,
       pin: true,
-      scrub: isMobile ? 1 : 0.6,  // more scrub on mobile = smoother on fast swipe
+      pinSpacing: true,
+      invalidateOnRefresh: true,
+      scrub: isMobile ? 0.8 : 0.6,
       anticipatePin: 1,
-      fastScrollEnd: true,          // stops over-shooting on fast finger swipe
+      fastScrollEnd: true,
       preventOverlaps: true,
+      onRefresh() {
+        renderFrame(0);
+      },
+      onLeaveBack() {
+        renderFrame(0);
+      },
     },
     onUpdate() {
       renderFrame(Math.round(obj.frame));
@@ -282,6 +308,7 @@ gsap.to('#sandwichWallpaper', {
     start: 'top top',
     end: 'bottom top',
     scrub: 1.2,
+    invalidateOnRefresh: true,
   },
 });
 
@@ -293,6 +320,7 @@ gsap.to('#smoothieWallpaper', {
     start: 'top bottom',
     end: 'bottom top',
     scrub: 1.2,
+    invalidateOnRefresh: true,
   },
 });
 
@@ -311,6 +339,7 @@ document.querySelectorAll('.fruit').forEach((fruit, i) => {
       start: 'top bottom',
       end: 'bottom top',
       scrub: 1 + i * 0.2,
+      invalidateOnRefresh: true,
     },
   });
 });
@@ -381,7 +410,6 @@ if (!prefersReduced) {
   });
 
 } else {
-  // Immediately show all animated elements — no flicker
   document.querySelectorAll('.gsap-fade-up, .gsap-reveal-left, .gsap-reveal-right').forEach(el => {
     el.style.opacity = '1';
     el.style.transform = 'none';
@@ -403,7 +431,25 @@ function openMenuModal(catId) {
   modalContent.appendChild(tpl.content.cloneNode(true));
 
   applyLanguage(lang);
-  initShoppingBags(); // called directly — no fragile window override needed
+
+  const modalDialog = menuModal.querySelector('.modal-dialog');
+  let cartBar = modalDialog.querySelector('.cart-bar');
+  if (!cartBar) {
+    cartBar = document.createElement('div');
+    cartBar.className = 'cart-bar hidden';
+    cartBar.innerHTML = `
+      <div class="cart-info">
+        <div class="cart-items-count"></div>
+        <div class="cart-total">0 kr</div>
+      </div>
+      <button class="btn-checkout" aria-label="Gå til betaling">Gå til betaling →</button>
+    `;
+    modalDialog.appendChild(cartBar);
+    cartBar.querySelector('.btn-checkout').addEventListener('click', openCheckout, { passive: true });
+  }
+
+  modalContent.classList.add('has-cart-bar');
+  initCartQuantityControls();
 
   menuModal.classList.add('open');
   menuModal.setAttribute('aria-hidden', 'false');
@@ -429,6 +475,9 @@ menuModal.querySelectorAll('[data-close]').forEach(el => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && menuModal.classList.contains('open')) closeMenuModal();
 }, { passive: true });
+
+initCheckoutModal();
+initFloatingCartButton();
 
 
 /* ============================================================
@@ -519,30 +568,218 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 
 
 /* ============================================================
-   SHOPPING BAG
+   CART SYSTEM — Food Ordering with Quantity Controls
 ============================================================ */
-function initShoppingBags() {
-  document.querySelectorAll('.d-price').forEach(priceEl => {
-    if (priceEl.querySelector('.shopping-bag-btn')) return;
+const cart = {}; // { "Item Name": { price: 89, qty: 2 }, ... }
 
-    const price = priceEl.textContent.trim();
-    priceEl.innerHTML = `
-      <span class="price-wrapper">
-        <span>${price}</span>
-        <button class="shopping-bag-btn" aria-label="Add to cart">
-          🛍️<span class="cart-badge">1</span>
-        </button>
-      </span>
+function parsePrice(priceText) {
+  const match = priceText.match(/(\d+)/);
+  return match ? parseInt(match[1]) : 0;
+}
+
+function getItemKey(itemName) {
+  return itemName.trim();
+}
+
+function getCartTotals() {
+  let totalItems = 0;
+  let totalPrice = 0;
+  Object.values(cart).forEach(item => {
+    totalItems += item.qty || 0;
+    totalPrice += (item.price || 0) * (item.qty || 0);
+  });
+  return { totalItems, totalPrice };
+}
+
+function updateCartBar() {
+  const { totalItems, totalPrice } = getCartTotals();
+  const cartBar = document.querySelector('.cart-bar');
+  const itemsCountEl = cartBar?.querySelector('.cart-items-count');
+  const totalEl = cartBar?.querySelector('.cart-total');
+
+  if (totalItems === 0) {
+    cartBar?.classList.add('hidden');
+    updateFloatingCartButton();
+    return;
+  }
+
+  cartBar?.classList.remove('hidden');
+
+  if (itemsCountEl) {
+    itemsCountEl.textContent = totalItems === 1 ? '1 vare' : `${totalItems} varer`;
+  }
+  if (totalEl) {
+    totalEl.textContent = `${totalPrice} kr`;
+  }
+  updateFloatingCartButton();
+}
+
+function updateFloatingCartButton() {
+  const { totalItems, totalPrice } = getCartTotals();
+  const floatingBtn = document.getElementById('floatingCartBtn');
+
+  if (totalItems === 0) {
+    floatingBtn?.classList.remove('show');
+  } else {
+    floatingBtn?.classList.add('show');
+    const countEl = floatingBtn?.querySelector('.cart-count');
+    const priceEl = floatingBtn?.querySelector('.cart-price');
+    if (countEl) countEl.textContent = `${totalItems} ${totalItems === 1 ? 'vare' : 'varer'}`;
+    if (priceEl) priceEl.textContent = `kr. ${totalPrice}`;
+  }
+}
+
+function initCartQuantityControls() {
+  document.querySelectorAll('.d-item').forEach(item => {
+    const dInfoEl = item.querySelector('.d-info');
+    const dPriceEl = item.querySelector('.d-price');
+    const itemName = dInfoEl?.querySelector('strong')?.textContent.trim();
+    const priceText = dPriceEl?.textContent.trim();
+
+    if (!itemName || !priceText) return;
+
+    const key = getItemKey(itemName);
+    const price = parsePrice(priceText);
+    const existingControl = item.querySelector('.qty-control');
+    if (existingControl) return;
+
+    const qtyControl = document.createElement('div');
+    qtyControl.className = 'qty-control';
+    qtyControl.innerHTML = `
+      <button class="qty-btn minus" aria-label="Fjern">−</button>
+      <span class="qty-display">0</span>
+      <button class="qty-btn plus" aria-label="Tilføj">+</button>
     `;
 
-    const btn = priceEl.querySelector('.shopping-bag-btn');
-    let resetTimer;
+    item.style.display = 'grid';
+    item.style.gridTemplateColumns = '1fr auto auto';
+    item.style.alignItems = 'center';
+    item.appendChild(qtyControl);
+
+    const minusBtn = qtyControl.querySelector('.minus');
+    const plusBtn = qtyControl.querySelector('.plus');
+    const qtyDisplay = qtyControl.querySelector('.qty-display');
+
+    function updateUI() {
+      const qty = cart[key]?.qty || 0;
+      qtyDisplay.textContent = qty;
+      minusBtn.disabled = qty === 0;
+      if (qty > 0) {
+        item.classList.add('has-qty');
+      } else {
+        item.classList.remove('has-qty');
+      }
+      updateCartBar();
+    }
+
+    minusBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      if ((cart[key]?.qty || 0) > 0) {
+        cart[key].qty--;
+        if (cart[key].qty === 0) delete cart[key];
+        updateUI();
+      }
+    }, { passive: false });
+
+    plusBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (!cart[key]) {
+        cart[key] = { price, qty: 0 };
+      }
+      cart[key].qty++;
+      updateUI();
+    }, { passive: false });
+
+    updateUI();
+  });
+}
+
+function openCheckout() {
+  if (Object.keys(cart).length === 0) return;
+
+  const menuModal = document.getElementById('menuModal');
+  menuModal.classList.remove('open');
+  menuModal.setAttribute('aria-hidden', 'true');
+
+  const checkoutModal = document.getElementById('checkoutModal');
+  const checkoutItems = checkoutModal.querySelector('.checkout-items');
+  checkoutItems.innerHTML = '';
+
+  let total = 0;
+  Object.entries(cart).forEach(([itemName, itemData]) => {
+    const qty = itemData.qty || 0;
+    const price = itemData.price || 0;
+    if (qty > 0) {
+      const lineTotal = price * qty;
+      total += lineTotal;
+
+      const itemEl = document.createElement('div');
+      itemEl.className = 'checkout-item';
+      itemEl.innerHTML = `
+        <div class="checkout-item-name">${itemName}</div>
+        <div class="checkout-item-qty">×${qty}</div>
+        <div class="checkout-item-price">${lineTotal} kr</div>
+      `;
+      checkoutItems.appendChild(itemEl);
+    }
+  });
+
+  checkoutModal.querySelector('.checkout-total-amount').textContent = `${total} kr`;
+  checkoutModal.classList.add('open');
+  checkoutModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeCheckout(goBackToMenu = false) {
+  const checkoutModal = document.getElementById('checkoutModal');
+  checkoutModal.classList.remove('open');
+  checkoutModal.setAttribute('aria-hidden', 'true');
+
+  if (goBackToMenu) {
+    const menuModal = document.getElementById('menuModal');
+    menuModal.classList.add('open');
+    menuModal.setAttribute('aria-hidden', 'false');
+  }
+}
+
+function clearCart() {
+  Object.keys(cart).forEach(key => delete cart[key]);
+  updateFloatingCartButton();
+}
+
+function showConfirmation(message) {
+  const confirmation = document.getElementById('confirmationMessage');
+  confirmation.querySelector('.confirmation-text').textContent = message;
+  confirmation.classList.add('show');
+
+  setTimeout(() => {
+    confirmation.classList.remove('show');
+    closeCheckout();
+    clearCart();
+  }, 2000);
+}
+
+function initCheckoutModal() {
+  const checkoutModal = document.getElementById('checkoutModal');
+  if (!checkoutModal) return;
+
+  const backdrop = checkoutModal.querySelector('.modal-backdrop');
+  const backBtn = checkoutModal.querySelector('.btn-back');
+  const paymentBtns = checkoutModal.querySelectorAll('.payment-btn');
+
+  backdrop?.addEventListener('click', () => closeCheckout(true), { passive: true });
+  backBtn?.addEventListener('click', () => closeCheckout(true), { passive: true });
+
+  paymentBtns.forEach(btn => {
     btn.addEventListener('click', e => {
       e.preventDefault();
-      e.stopPropagation();
-      btn.classList.add('added');
-      clearTimeout(resetTimer);
-      resetTimer = setTimeout(() => btn.classList.remove('added'), 2000);
+      showConfirmation('Tak for din ordre! 🎉');
     }, { passive: false });
   });
+}
+
+function initFloatingCartButton() {
+  const floatingBtn = document.getElementById('floatingCartBtn');
+  if (!floatingBtn) return;
+
+  floatingBtn.addEventListener('click', openCheckout, { passive: true });
 }
