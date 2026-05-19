@@ -1235,6 +1235,27 @@ ul  { list-style: none; }
   display: none;
 }
 
+.btn-stripe-pay {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--green);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: background 0.2s, transform 0.15s;
+  touch-action: manipulation;
+  min-height: 36px;
+  margin-left: 8px;
+}
+
+.btn-stripe-pay:active {
+  background: var(--green-dk);
+  transform: scale(0.98);
+}
+
 /* Modal scroll bar */
 .modal-content::-webkit-scrollbar { width: 6px; }
 .modal-content::-webkit-scrollbar-track { background: transparent; }
