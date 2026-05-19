@@ -1245,10 +1245,17 @@ ul  { list-style: none; }
   font-weight: 600;
   padding: 8px 14px;
   border-radius: 8px;
+  border: none;
+  cursor: pointer;
   transition: background 0.2s, transform 0.15s;
   touch-action: manipulation;
   min-height: 36px;
   margin-left: 8px;
+  font-family: inherit;
+}
+
+.btn-stripe-pay:hover {
+  background: var(--green-dk);
 }
 
 .btn-stripe-pay:active {

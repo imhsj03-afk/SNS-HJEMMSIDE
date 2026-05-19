@@ -479,6 +479,21 @@ document.addEventListener('keydown', e => {
 initCheckoutModal();
 initFloatingCartButton();
 
+function initStripePayButtons() {
+  document.querySelectorAll('.btn-stripe-pay').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      const stripeLink = btn.getAttribute('data-stripe-link');
+      const itemName = btn.getAttribute('data-item-name');
+      const qty = cart[getItemKey(itemName)]?.qty || 1;
+      const linkWithQty = `${stripeLink}?prefilled_quantity=${qty}`;
+      window.open(linkWithQty, '_blank');
+    }, { passive: false });
+  });
+}
+
+initStripePayButtons();
+
 
 /* ============================================================
    EN / DA LANGUAGE TOGGLE
@@ -770,9 +785,49 @@ function initCheckoutModal() {
   backBtn?.addEventListener('click', () => closeCheckout(true), { passive: true });
 
   paymentBtns.forEach(btn => {
-    btn.addEventListener('click', e => {
+    btn.addEventListener('click', async e => {
       e.preventDefault();
-      showConfirmation('Tak for din ordre! 🎉');
+
+      // Build items array from cart
+      const items = Object.entries(cart).map(([name, data]) => ({
+        name,
+        price: data.price,
+        qty: data.qty,
+      }));
+
+      if (items.length === 0) return;
+
+      // Disable all payment buttons and show loading
+      paymentBtns.forEach(b => {
+        b.disabled = true;
+        b.style.opacity = '0.6';
+      });
+      btn.textContent = 'Venter...';
+
+      try {
+        const res = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items }),
+        });
+
+        const data = await res.json();
+
+        if (data.url) {
+          // Redirect to Stripe Checkout
+          window.location.href = data.url;
+        } else {
+          throw new Error(data.error || 'Ukendt fejl');
+        }
+      } catch (err) {
+        console.error('Checkout fejl:', err);
+        alert('Der skete en fejl. Prøv igen.');
+        paymentBtns.forEach(b => {
+          b.disabled = false;
+          b.style.opacity = '1';
+        });
+        btn.textContent = btn.dataset.originalText || btn.textContent;
+      }
     }, { passive: false });
   });
 }
