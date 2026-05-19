@@ -450,6 +450,7 @@ function openMenuModal(catId) {
 
   modalContent.classList.add('has-cart-bar');
   initCartQuantityControls();
+  initStripePayButtons();
 
   menuModal.classList.add('open');
   menuModal.setAttribute('aria-hidden', 'false');
@@ -481,8 +482,11 @@ initFloatingCartButton();
 
 function initStripePayButtons() {
   document.querySelectorAll('.btn-stripe-pay').forEach(btn => {
+    if (btn.dataset.stripeInitialized) return;
+    btn.dataset.stripeInitialized = 'true';
     btn.addEventListener('click', e => {
       e.preventDefault();
+      e.stopPropagation();
       const stripeLink = btn.getAttribute('data-stripe-link');
       const itemName = btn.getAttribute('data-item-name');
       const qty = cart[getItemKey(itemName)]?.qty || 1;
@@ -491,8 +495,6 @@ function initStripePayButtons() {
     }, { passive: false });
   });
 }
-
-initStripePayButtons();
 
 
 /* ============================================================
